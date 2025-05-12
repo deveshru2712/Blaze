@@ -7,7 +7,6 @@ const InputValidator =
   async (req, res, next) => {
     try {
       const result = await schema.safeParseAsync(req.body);
-      console.log(result);
 
       if (!result.success) {
         const validationErrors = result.error.errors.map((err) => ({
@@ -21,7 +20,6 @@ const InputValidator =
       }
 
       req.body = result.data;
-      console.log(req.body);
       next();
     } catch (error) {
       next(error);

@@ -2,7 +2,7 @@ import { RequestHandler } from "express";
 import createHttpError from "http-errors";
 import { createAuthSession } from "../utils/redis/sessionManager";
 import prismaClient from "../utils/prismaClient";
-import { SignUpType } from "../utils/schema/authInputTypes";
+import { SignInType, SignUpType } from "../utils/schema/authInputTypes";
 import bcrypt from "bcryptjs";
 
 export const signUp: RequestHandler<
@@ -47,7 +47,7 @@ export const signUp: RequestHandler<
     });
 
     if (!success) {
-      throw createHttpError(500, "Unable to create session");
+      throw createHttpError(500, "Unable to process your request");
     }
 
     res.status(201).json({
@@ -59,8 +59,62 @@ export const signUp: RequestHandler<
     next(error);
   }
 };
-export const signIn: RequestHandler = (req, res, next) => {
+
+export const signIn: RequestHandler<
+  unknown,
+  unknown,
+  SignInType,
+  unknown
+> = async (req, res, next) => {
+  const { email, password } = req.body;
   try {
+    if (!email || !password) {
+      throw createHttpError(400, "Please provide all fields");
+    }
+
+    if (password.length < 6) {
+      throw createHttpError(400, "Password must be at least 6 characters");
+    }
+
+    const user = await prismaClient.user.findUnique({
+      where: {
+        email,
+      },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        username: true,
+      },
+    });
+
+    if (!user) {
+      throw createHttpError(404, "Unable to process your request");
+    }
+
+    const checkPassword = await bcrypt.compare(password, user.password);
+
+    if (!checkPassword) {
+      throw createHttpError(401, "Unauthorized");
+    }
+
+    const { sessionId, success } = await createAuthSession({
+      userId: user.id,
+      res,
+    });
+
+    if (!success) {
+      throw createHttpError(500, "Unable to process ");
+    }
+
+    res.status(200).json({
+      success: true,
+      user: {
+        ...user,
+        password: undefined,
+      },
+      sessionId,
+    });
   } catch (error) {
     console.log(error);
     next(error);
