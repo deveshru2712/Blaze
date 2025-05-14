@@ -9,4 +9,6 @@ router.post("/sign-up", validate(signUpInput), authController.signUp);
 router.post("/sign-in", validate(signInInput), authController.signIn);
 router.post("/logout", authController.logOut);
 
+router.post("/refresh", authController.refreshToken);
+
 export default router;

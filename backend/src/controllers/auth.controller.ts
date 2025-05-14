@@ -4,6 +4,8 @@ import { createAuthSession } from "../utils/redis/sessionManager";
 import prismaClient from "../utils/prismaClient";
 import { SignInType, SignUpType } from "../utils/schema/authInputTypes";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import env from "../utils/validateEnv";
 
 export const signUp: RequestHandler<
   unknown,
@@ -41,7 +43,7 @@ export const signUp: RequestHandler<
       },
     });
 
-    const { success, sessionId } = await createAuthSession({
+    const { success, accessToken } = await createAuthSession({
       userId: newUser.id,
       res,
     });
@@ -53,7 +55,8 @@ export const signUp: RequestHandler<
     res.status(201).json({
       success: true,
       user: { ...newUser, password: undefined },
-      sessionId,
+      // check for how to send access token in the frontend
+      accessToken,
     });
   } catch (error) {
     next(error);
@@ -98,7 +101,7 @@ export const signIn: RequestHandler<
       throw createHttpError(401, "Unauthorized");
     }
 
-    const { sessionId, success } = await createAuthSession({
+    const { accessToken, success } = await createAuthSession({
       userId: user.id,
       res,
     });
@@ -113,7 +116,8 @@ export const signIn: RequestHandler<
         ...user,
         password: undefined,
       },
-      sessionId,
+      // check for how to send access token in the frontend
+      // accessToken,
     });
   } catch (error) {
     console.log(error);
@@ -125,6 +129,17 @@ export const logOut: RequestHandler = (req, res, next) => {
   try {
   } catch (error) {
     console.log(error);
+    next(error);
+  }
+};
+
+export const refreshToken: RequestHandler = (req, res, next) => {
+  try {
+    res.status(200).json({
+      success: true,
+      // accessToken,
+    });
+  } catch (error) {
     next(error);
   }
 };
