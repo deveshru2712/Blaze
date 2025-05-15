@@ -22,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning={true}>
       <body
-        className={`${bricolageGrotesque.variable} w-screen h-screen bg-black/95 antialiased`}
+        className={`${bricolageGrotesque.variable} overflow-hidden bg-black/95 antialiased`}
       >
         {children}
       </body>
