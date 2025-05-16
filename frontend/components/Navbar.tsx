@@ -3,7 +3,7 @@ import React from "react";
 
 const Navbar = () => {
   return (
-    <nav className="w-full h-20 py-4 fixed top-0 bg-black/80 bg-opacity-30 backdrop-blur-md">
+    <nav className="w-full h-20 py-4 fixed top-0 bg-gradient-to-b from-black/80 to-black/50 backdrop-blur-md z-50">
       <div className="max-w-6xl px-4 mx-auto">
         <Link
           href={"/"}
@@ -12,7 +12,6 @@ const Navbar = () => {
           <span className="w-fit hover:bg-gradient-to-r hover:from-orange-400 hover:to-red-400 hover:bg-clip-text hover:text-transparent transition-colors duration-500">
             Blaze
           </span>
-
           <span className="text-white/90">🔥</span>
         </Link>
       </div>

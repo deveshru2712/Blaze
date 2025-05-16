@@ -48,7 +48,7 @@ const FeatureSection = () => {
 
   return (
     <div className="my-20 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto border rounded-2xl border-slate-400/30 p-6 sm:p-8 backdrop-blur-sm bg-white/5">
+      <div className="max-w-6xl mx-auto border rounded-2xl border-slate-400/30 p-6 sm:p-8 bg-slate-500/5">
         <h2 className="text-3xl font-bold text-center mb-10 text-white">
           Blaze Features
         </h2>
