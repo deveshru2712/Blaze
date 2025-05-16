@@ -4,8 +4,6 @@ import { createAuthSession } from "../utils/redis/sessionManager";
 import prismaClient from "../utils/prismaClient";
 import { SignInType, SignUpType } from "../utils/schema/authInputTypes";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import env from "../utils/validateEnv";
 
 export const signUp: RequestHandler<
   unknown,
@@ -55,7 +53,7 @@ export const signUp: RequestHandler<
     res.status(201).json({
       success: true,
       user: { ...newUser, password: undefined },
-      // check for how to send access token in the frontend
+      // send it for further request
       accessToken,
     });
   } catch (error) {
@@ -116,8 +114,7 @@ export const signIn: RequestHandler<
         ...user,
         password: undefined,
       },
-      // check for how to send access token in the frontend
-      // accessToken,
+      accessToken,
     });
   } catch (error) {
     console.log(error);

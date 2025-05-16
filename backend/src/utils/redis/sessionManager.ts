@@ -1,9 +1,9 @@
 import createHttpError from "http-errors";
+import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import env from "../validateEnv";
 import { redisClient } from "./redisClient";
-import { Request, Response } from "express";
 
 export const createAuthSession = async ({ userId, res }: AuthSession) => {
   try {
@@ -85,5 +85,36 @@ export const refreshAuthSession = async (req: Request, res: Response) => {
       throw createHttpError(401, "Invalid authentication token");
     }
     throw createHttpError(500, "Failed to refresh session");
+  }
+};
+
+export const verifyAuthSession = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const cookie = req.headers.authorization;
+    if (!cookie) {
+      throw createHttpError(401, "No token provided");
+    }
+
+    const accessToken = cookie.split(" ")[1];
+
+    const decode = jwt.verify(accessToken, env.JWT_ACCESS_KEY, (error) => {
+      if (error) {
+        if (error.name == "JsonWebTokenError") {
+          return res.status(401).json("Invalid token.Please login again.");
+        }
+        if (error.name == "TokenExpiredError") {
+          return res.status(401).json("Token expired. Refresh required");
+        }
+      }
+    });
+
+    // req.userId = payload.userId;
+    next();
+  } catch (error) {
+    throw createHttpError(500, "Unable to verify the request");
   }
 };
