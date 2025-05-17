@@ -5,6 +5,8 @@ import crypto from "crypto";
 import env from "../validateEnv";
 import { redisClient } from "./redisClient";
 
+import { AuthSession, TokenPayload } from "@types";
+
 export const createAuthSession = async ({ userId, res }: AuthSession) => {
   try {
     const sessionId = crypto.randomUUID();
@@ -27,7 +29,7 @@ export const createAuthSession = async ({ userId, res }: AuthSession) => {
 
     await redisClient.SETEX(
       `user:${userId}:${sessionId}`,
-      604800000,
+      604800,
       refreshToken
     );
 

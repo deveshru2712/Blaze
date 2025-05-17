@@ -2,13 +2,15 @@ import "dotenv/config";
 import express, { NextFunction, Request, Response } from "express";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
-import createHttpError, { CreateHttpError, isHttpError } from "http-errors";
+import createHttpError, { isHttpError } from "http-errors";
+import cors from "cors";
 
 import authRouter from "./routes/auth.routes";
 import env from "./utils/validateEnv";
 import { redisClient } from "./utils/redis/redisClient";
 
 const app = express();
+app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 app.use(express.json());
 app.use(morgan("dev"));
 app.use(cookieParser());

@@ -7,22 +7,13 @@
     "esModuleInterop": true,
     "strict": true,
     "skipLibCheck": true,
-    "typeRoots": [
-      "node_modules/@types",
-      "types"  // This makes your types folder a global types location
-    ],
+    "typeRoots": ["node_modules/@types", "@types"],
     "paths": {
-      "@types/*": ["types/*"]  // For explicit imports
+      "@types/*": ["@types/*"]
     },
-    "baseUrl": "."
+    "baseUrl": ".",
+    "moduleResolution": "node"
   },
-  "include": [
-    "src/**/*",
-    "types/**/*",
-    "@types/index.d.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["src/**/*", "@types/**/*", "types/index.d.ts"],
+  "exclude": ["node_modules", "dist"]
 }

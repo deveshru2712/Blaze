@@ -8,6 +8,8 @@ import { z } from "zod";
 import { Form } from "./ui/form";
 import { Button } from "./ui/button";
 import Formfield from "./Formfield";
+import { useAuthStore } from "@/store/auth.Store";
+import { useRouter } from "next/navigation";
 
 const authFormSchema = (type: FormType) => {
   return z.object({
@@ -18,6 +20,10 @@ const authFormSchema = (type: FormType) => {
 };
 
 const Authform = ({ type }: { type: FormType }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { User, isLoading, logIn, signUp } = useAuthStore();
+
+  const router = useRouter();
   const formSchema = authFormSchema(type);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -28,6 +34,16 @@ const Authform = ({ type }: { type: FormType }) => {
       password: "",
     },
   });
+
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    if (type == "sign-in") {
+      logIn(values);
+      router.push("/");
+    } else {
+      signUp(values as { username: string; email: string; password: string });
+      router.push("/");
+    }
+  }
 
   return (
     <div className="w-screen h-screen flex justify-center items-center px-6 text-white">
@@ -62,7 +78,10 @@ const Authform = ({ type }: { type: FormType }) => {
           </div>
           <div>
             <Form {...form}>
-              <form className="w-full space-y-6 mt-4">
+              <form
+                className="w-full space-y-6 mt-4"
+                onSubmit={form.handleSubmit(onSubmit)}
+              >
                 {type == "sign-up" && (
                   <Formfield
                     control={form.control}
