@@ -20,8 +20,7 @@ const authFormSchema = (type: FormType) => {
 };
 
 const Authform = ({ type }: { type: FormType }) => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { User, isLoading, logIn, signUp } = useAuthStore();
+  const { logIn, signUp } = useAuthStore();
 
   const router = useRouter();
   const formSchema = authFormSchema(type);
@@ -35,15 +34,17 @@ const Authform = ({ type }: { type: FormType }) => {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (type == "sign-in") {
-      logIn(values);
-      router.push("/");
+      await logIn(values);
+      router.push("/message");
     } else {
-      signUp(values as { username: string; email: string; password: string });
-      router.push("/");
+      await signUp(
+        values as { username: string; email: string; password: string }
+      );
+      router.push("/message");
     }
-  }
+  };
 
   return (
     <div className="w-screen h-screen flex justify-center items-center px-6 text-white">
