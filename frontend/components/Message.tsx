@@ -25,7 +25,8 @@ const Message = () => {
       <div className="flex flex-col flex-1 justify-between">
         {/* messages */}
         <div>
-          <MessageSkeleton />
+          <MessageSkeleton isMine={true} />
+          <MessageSkeleton isMine={false} />
         </div>
         {/* send message */}
         <div className="">
