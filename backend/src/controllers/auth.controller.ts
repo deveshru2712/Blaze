@@ -130,7 +130,7 @@ export const logOut: RequestHandler = (req, res, next) => {
   }
 };
 
-export const refreshToken: RequestHandler = (req, res, next) => {
+export const refreshAccessToken: RequestHandler = (req, res, next) => {
   try {
     res.status(200).json({
       success: true,

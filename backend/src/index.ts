@@ -5,8 +5,8 @@ import cookieParser from "cookie-parser";
 import createHttpError, { isHttpError } from "http-errors";
 import cors from "cors";
 
-import authRouter from "./routes/auth.routes";
 import env from "./utils/validateEnv";
+import authRouter from "./routes/auth.routes";
 import { redisClient } from "./utils/redis/redisClient";
 
 const app = express();
@@ -45,7 +45,7 @@ app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-app.listen(env.PORT, async () => {
+export const server = app.listen(env.PORT, async () => {
   await redisClient.connect();
   console.log("Server is running on the port:", env.PORT);
 });

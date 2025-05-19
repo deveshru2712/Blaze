@@ -4,7 +4,6 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import env from "../validateEnv";
 import { redisClient } from "./redisClient";
-
 import { AuthSession, TokenPayload } from "@types";
 
 export const createAuthSession = async ({ userId, res }: AuthSession) => {
@@ -27,11 +26,15 @@ export const createAuthSession = async ({ userId, res }: AuthSession) => {
       }
     );
 
+    // creating a session for refresh token in the application
     await redisClient.SETEX(
       `user:${userId}:${sessionId}`,
       604800,
       refreshToken
     );
+
+    // creating a set in order to track the session id
+    await redisClient.SADD(`user_session:${userId}`, sessionId);
 
     res.cookie("authToken", refreshToken, {
       path: "/",
@@ -51,10 +54,21 @@ export const refreshAuthSession = async (req: Request, res: Response) => {
   const cookie = req.cookies.authToken;
 
   if (!cookie) {
+    // ask the user to again login
     throw createHttpError(401, "Unauthorized");
   }
+
   try {
     const decode = jwt.verify(cookie, env.JWT_REFRESH_KEY) as TokenPayload;
+
+    const redisToken = await redisClient.get(
+      `user:${decode.userId}:${decode.sessionId}`
+    );
+
+    if (!redisToken || redisToken !== cookie) {
+      // ask the user to login again
+      throw createHttpError(401, "Invalid session");
+    }
 
     const newRefreshToken = jwt.sign(decode, env.JWT_REFRESH_KEY, {
       expiresIn: "7d",
@@ -96,27 +110,25 @@ export const verifyAuthSession = async (
   next: NextFunction
 ) => {
   try {
-    const cookie = req.headers.authorization;
-    if (!cookie) {
+    const token = req.headers.authorization;
+
+    if (!token) {
       throw createHttpError(401, "No token provided");
     }
 
-    const accessToken = cookie.split(" ")[1];
+    const accessToken = token.split(" ")[1];
 
-    const decode = jwt.verify(accessToken, env.JWT_ACCESS_KEY, (error) => {
-      if (error) {
-        if (error.name == "JsonWebTokenError") {
-          return res.status(401).json("Invalid token.Please login again.");
-        }
-        if (error.name == "TokenExpiredError") {
-          return res.status(401).json("Token expired. Refresh required");
-        }
-      }
-    });
+    const decode = jwt.verify(accessToken, env.JWT_ACCESS_KEY) as TokenPayload;
 
-    // req.userId = payload.userId;
+    req.user = {
+      id: decode.userId,
+    };
+
     next();
   } catch (error) {
-    throw createHttpError(500, "Unable to verify the request");
+    if (error instanceof jwt.TokenExpiredError) {
+      throw createHttpError(401, "Token expired");
+    }
+    throw createHttpError(500, "invalid request");
   }
 };
