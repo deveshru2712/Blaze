@@ -1,10 +1,5 @@
 type FormType = "sign-in" | "sign-up";
 
-type AuthFormValues = {
-  email: string;
-  password: string;
-} & (type extends "sign-up" ? { username: string } : { username?: never });
-
 interface CardProps {
   icon: string;
   title: string;
@@ -14,8 +9,8 @@ interface CardProps {
 
 interface User {
   id: string;
-  username: string;
-  email: string;
+  username?: string;
+  email?: string;
 }
 
 interface SignUpType {

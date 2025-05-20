@@ -51,6 +51,14 @@ export const useAuthStore = create<AuthStore>((set) => ({
       toast("Unable login 🥲");
     }
   },
-  authCheck: () => {},
+  authCheck: () => {
+    set({ isLoading: true });
+    try {
+      // const res = await axios("http://localhost:5050/api/auth/");
+    } catch (error) {
+      set({});
+      console.log(error);
+    }
+  },
   logOut: () => {},
 }));

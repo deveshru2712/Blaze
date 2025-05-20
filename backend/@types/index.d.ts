@@ -1,13 +1,15 @@
 import { Response } from "express";
 
 export interface AuthSession {
-  userId: string;
+  user: User;
   res: Response;
 }
 
 export interface TokenPayload {
   userId: string;
   sessionId: string;
+  username: string;
+  email: string;
 }
 
 declare global {
@@ -15,7 +17,15 @@ declare global {
     interface Request {
       user: {
         id: string;
+        username: string;
+        email: string;
       };
     }
   }
+}
+
+interface UserSession {
+  id: string;
+  username: string;
+  email: string;
 }

@@ -53,7 +53,6 @@ export const signUp: RequestHandler<
     res.status(201).json({
       success: true,
       user: { ...newUser, password: undefined },
-      // send it for further request
       accessToken,
     });
   } catch (error) {

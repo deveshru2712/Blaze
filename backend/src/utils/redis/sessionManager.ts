@@ -4,37 +4,41 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import env from "../validateEnv";
 import { redisClient } from "./redisClient";
-import { AuthSession, TokenPayload } from "@types";
+import { AuthSession, TokenPayload, UserSession } from "@types";
 
-export const createAuthSession = async ({ userId, res }: AuthSession) => {
+export const createAuthSession = async ({ user, res }: AuthSession) => {
   try {
     const sessionId = crypto.randomUUID();
 
-    const refreshToken = jwt.sign(
-      { userId, sessionId } as TokenPayload,
-      env.JWT_REFRESH_KEY,
-      {
-        expiresIn: "7d",
-      }
-    );
+    const payload: TokenPayload = {
+      userId: user.id,
+      email: user.email,
+      sessionId,
+      username: user.username,
+    };
 
-    const accessToken = jwt.sign(
-      { userId, sessionId } as TokenPayload,
-      env.JWT_ACCESS_KEY,
-      {
-        expiresIn: "15m",
-      }
-    );
+    const refreshToken = jwt.sign(payload, env.JWT_REFRESH_KEY, {
+      expiresIn: "7d",
+    });
 
-    // creating a session for refresh token in the application
-    await redisClient.SETEX(
-      `user:${userId}:${sessionId}`,
-      604800,
-      refreshToken
-    );
+    const accessToken = jwt.sign(payload, env.JWT_ACCESS_KEY, {
+      expiresIn: "15m",
+    });
 
-    // creating a set in order to track the session id
-    await redisClient.SADD(`user_session:${userId}`, sessionId);
+    // setting the refresh token as a hash in redis
+
+    redisClient.HSET(`user:${payload.userId}:${payload.sessionId}`, {
+      refreshToken,
+      user: JSON.stringify({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+      }),
+    });
+
+    // setting an expiry for it
+
+    redisClient.EXPIRE(`user:${payload.userId}:${payload.sessionId}`, 604800);
 
     res.cookie("authToken", refreshToken, {
       path: "/",
@@ -46,26 +50,28 @@ export const createAuthSession = async ({ userId, res }: AuthSession) => {
 
     return { success: true, accessToken };
   } catch (error) {
+    console.log("Error while setting cookie");
     throw createHttpError(500, "Cannot set the cookie");
   }
 };
 
 export const refreshAuthSession = async (req: Request, res: Response) => {
-  const cookie = req.cookies.authToken;
+  const token = req.cookies.authToken;
 
-  if (!cookie) {
+  if (!token) {
     // ask the user to again login
     throw createHttpError(401, "Unauthorized");
   }
 
   try {
-    const decode = jwt.verify(cookie, env.JWT_REFRESH_KEY) as TokenPayload;
+    const decode = jwt.verify(token, env.JWT_REFRESH_KEY) as TokenPayload;
 
-    const redisToken = await redisClient.get(
-      `user:${decode.userId}:${decode.sessionId}`
+    const redisRefreshToken = await redisClient.HGET(
+      `user:${decode.userId}:${decode.sessionId}`,
+      "refreshToken"
     );
 
-    if (!redisToken || redisToken !== cookie) {
+    if (!redisRefreshToken || redisRefreshToken !== token) {
       // ask the user to login again
       throw createHttpError(401, "Invalid session");
     }
@@ -78,10 +84,17 @@ export const refreshAuthSession = async (req: Request, res: Response) => {
       expiresIn: "15m",
     });
 
-    await redisClient.SETEX(
-      `session:user:${decode.userId}:${decode.sessionId}`,
-      604800,
+    // updating the redis entry
+    await redisClient.HSET(
+      `user:${decode.userId}:${decode.sessionId}`,
+      "refreshToken",
       newRefreshToken
+    );
+
+    // setting expiry
+    await redisClient.EXPIRE(
+      `user:${decode.userId}:${decode.sessionId}`,
+      604800
     );
 
     res.cookie("authToken", newRefreshToken, {
@@ -100,6 +113,7 @@ export const refreshAuthSession = async (req: Request, res: Response) => {
     if (error instanceof jwt.JsonWebTokenError) {
       throw createHttpError(401, "Invalid authentication token");
     }
+    console.log("Error while refreshing the token :", error);
     throw createHttpError(500, "Failed to refresh session");
   }
 };
@@ -110,25 +124,40 @@ export const verifyAuthSession = async (
   next: NextFunction
 ) => {
   try {
-    const token = req.headers.authorization;
-
-    if (!token) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
       throw createHttpError(401, "No token provided");
     }
 
-    const accessToken = token.split(" ")[1];
-
+    const accessToken = authHeader.split(" ")[1];
     const decode = jwt.verify(accessToken, env.JWT_ACCESS_KEY) as TokenPayload;
 
+    const userDataString = await redisClient.HGET(
+      `user:${decode.userId}:${decode.sessionId}`,
+      "user"
+    );
+
+    if (!userDataString) {
+      throw createHttpError(401, "Invalid session");
+    }
+
+    const userData = JSON.parse(userDataString) as UserSession;
+
     req.user = {
-      id: decode.userId,
+      id: userData.id,
+      username: userData.username,
+      email: userData.email,
     };
 
     next();
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
-      throw createHttpError(401, "Token expired");
+      return next(createHttpError(401, "Token expired - please refresh"));
     }
-    throw createHttpError(500, "invalid request");
+    if (error instanceof jwt.JsonWebTokenError) {
+      return next(createHttpError(401, "Invalid token"));
+    }
+    console.error("Authentication error:", error);
+    next(createHttpError(500, "Authentication failed"));
   }
 };
