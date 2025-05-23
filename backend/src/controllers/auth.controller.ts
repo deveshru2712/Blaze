@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import e, { NextFunction, Request, RequestHandler, Response } from "express";
+import { NextFunction, Request, RequestHandler, Response } from "express";
 import prismaClient from "../utils/prismaClient";
 import { SignInType, SignUpType } from "../utils/schema/authInputTypes";
 import { createAuthSession } from "../utils/redis/sessionManager";
@@ -141,6 +141,19 @@ export const signIn: RequestHandler = async (
 
 export const logOut: RequestHandler = async (req, res, next) => {
   try {
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const verifySession: RequestHandler = async (req, res, next) => {
+  try {
+    const user = req.user;
+    res.status(200).json({
+      success: true,
+      message: "User verified",
+      user,
+    });
   } catch (error) {
     next(error);
   }

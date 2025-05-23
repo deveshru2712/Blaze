@@ -7,7 +7,7 @@ import {
 import { redisClient } from "./redisClient";
 import jwt from "jsonwebtoken";
 import env from "../validateEnv";
-import { CookieOptions } from "express";
+import { CookieOptions, NextFunction, Request, Response } from "express";
 
 export const createAuthSession = async (user: UserSession) => {
   try {
@@ -62,5 +62,69 @@ export const createAuthSession = async (user: UserSession) => {
       success: false,
       error,
     } as SessionFailure;
+  }
+};
+
+export const verifyAuthSession = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const token = req.headers.authorization;
+
+    if (!token || !token.startsWith("Bearer ")) {
+      res.status(401).json({
+        message: "Invalid token",
+        action: "refresh",
+      });
+      return;
+    }
+
+    const authHeader = token.split(" ")[1];
+
+    const payload = jwt.verify(authHeader, env.JWT_ACCESS_KEY) as TokenPayload;
+
+    const session = await redisClient.HGET(
+      `user:${payload.userId}:${payload.sessionId}`,
+      "user"
+    );
+
+    if (!session) {
+      res.status(401).json({
+        message: "session expired",
+        action: "reauthenticate",
+      });
+      return;
+    }
+
+    const sessionData = JSON.parse(session) as UserSession;
+
+    req.user = {
+      id: sessionData.id,
+      email: sessionData.email,
+      username: sessionData.username,
+    };
+
+    next();
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      res.status(401).json({
+        message: "Token expired",
+        action: "refresh",
+      });
+      return;
+    }
+
+    if (error instanceof jwt.JsonWebTokenError) {
+      res.status(401).json({
+        message: "Invalid token",
+        action: "reauthenticate",
+      });
+      return;
+    }
+
+    console.error("Auth verification error:", error);
+    next(error);
   }
 };
