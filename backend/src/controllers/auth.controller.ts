@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
-import { NextFunction, Request, RequestHandler, Response } from "express";
+import e, { NextFunction, Request, RequestHandler, Response } from "express";
 import prismaClient from "../utils/prismaClient";
-import { SignUpType } from "../utils/schema/authInputTypes";
+import { SignInType, SignUpType } from "../utils/schema/authInputTypes";
 import { createAuthSession } from "../utils/redis/sessionManager";
 
 export const signUp = async (
@@ -69,8 +69,71 @@ export const signUp = async (
   }
 };
 
-export const signIn: RequestHandler = async (req, res, next) => {
+export const signIn: RequestHandler = async (
+  req: Request<unknown, unknown, SignInType, unknown>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { email, password } = req.body;
   try {
+    if (!email || !password) {
+      res.status(400).json({
+        message: "Please provide all fields",
+      });
+      return;
+    }
+
+    if (password.length > 6) {
+      res.status(400).json({
+        message: "Password must of 6 character",
+      });
+      return;
+    }
+
+    const user = await prismaClient.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        password: true,
+      },
+    });
+
+    if (!user) {
+      res.status(400).json({
+        message: "Invalid credentials",
+      });
+      return;
+    }
+
+    const checkPassword = await bcrypt.compare(password, user.password);
+    if (!checkPassword) {
+      res.status(401).json({
+        message: "Invalid credentials",
+      });
+      return;
+    }
+
+    const session = await createAuthSession(user);
+
+    if (!session.success) {
+      console.error("Session creation failed:", session.error);
+      res.status(500).json({
+        message: "Failed to create authentication session",
+        action: "reauthenticate",
+      });
+      return;
+    }
+
+    res.cookie("blazeToken", session.refreshToken, session.cookieConfig);
+
+    res.status(200).json({
+      success: true,
+      user: { ...user, password: undefined },
+      accessToken: session.accessToken,
+      message: "Logged in successfully",
+    });
   } catch (error) {
     next(error);
   }

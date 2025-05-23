@@ -11,6 +11,12 @@ import { CookieOptions } from "express";
 
 export const createAuthSession = async (user: UserSession) => {
   try {
+    // this will delete the existing session
+    const existingSessions = await redisClient.keys(`user:${user.id}:*`);
+    if (existingSessions.length > 0) {
+      await redisClient.del(existingSessions);
+    }
+
     const sessionId = crypto.randomUUID();
 
     const payload: TokenPayload = { sessionId, userId: user.id };
