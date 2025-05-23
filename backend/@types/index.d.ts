@@ -8,8 +8,6 @@ export interface AuthSession {
 export interface TokenPayload {
   userId: string;
   sessionId: string;
-  username: string;
-  email: string;
 }
 
 declare global {
@@ -28,4 +26,17 @@ interface UserSession {
   id: string;
   username: string;
   email: string;
+}
+
+interface SessionSuccess {
+  success: true;
+  refreshToken: string;
+  accessToken: string;
+  cookieConfig: CookieOptions;
+}
+
+interface SessionFailure {
+  success: false;
+  error: string;
+  errorCode?: string;
 }

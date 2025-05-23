@@ -1,25 +1,28 @@
-import { RequestHandler } from "express";
-import createHttpError from "http-errors";
-import { createAuthSession } from "../utils/redis/sessionManager";
-import prismaClient from "../utils/prismaClient";
-import { SignInType, SignUpType } from "../utils/schema/authInputTypes";
 import bcrypt from "bcryptjs";
+import { NextFunction, Request, RequestHandler, Response } from "express";
+import prismaClient from "../utils/prismaClient";
+import { SignUpType } from "../utils/schema/authInputTypes";
+import { createAuthSession } from "../utils/redis/sessionManager";
 
-export const signUp: RequestHandler<
-  unknown,
-  unknown,
-  SignUpType,
-  unknown
-> = async (req, res, next) => {
+export const signUp = async (
+  req: Request<unknown, unknown, SignUpType, unknown>,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const { username, email, password } = req.body;
   try {
-    const { email, username, password } = req.body;
-
-    if (!email || !username || !password) {
-      throw createHttpError(400, "Please provide all fields");
+    if (!username || !email || !password) {
+      res.status(400).json({
+        message: "Please provide all fields",
+      });
+      return;
     }
 
     if (password.length < 6) {
-      throw createHttpError(400, "Password must be at least 6 characters");
+      res.status(400).json({
+        message: "Password must be of 6 character",
+      });
+      return;
     }
 
     const existingUser = await prismaClient.user.findUnique({
@@ -27,114 +30,54 @@ export const signUp: RequestHandler<
     });
 
     if (existingUser) {
-      throw createHttpError(409, "Email already in use");
+      res.status(409).json({
+        message: "Email already in use",
+      });
+      return;
     }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = await prismaClient.user.create({
-      data: {
-        email,
-        username,
-        password: hashedPassword,
-      },
+      data: { username, email, password: hashedPassword },
     });
 
-    const { success, accessToken } = await createAuthSession({
-      userId: newUser.id,
-      res,
-    });
+    // create an auth session
 
-    if (!success) {
-      throw createHttpError(500, "Unable to process your request");
+    const session = await createAuthSession(newUser);
+
+    if (!session.success) {
+      console.error("Session creation failed:", session.error);
+      res.status(500).json({
+        message: "Failed to create authentication session",
+        action: "reauthenticate",
+      });
+      return;
     }
 
-    res.status(201).json({
+    res.cookie("blazeToken", session.refreshToken, session.cookieConfig);
+
+    res.status(200).json({
       success: true,
       user: { ...newUser, password: undefined },
-      accessToken,
+      accessToken: session.accessToken,
+      message: "Account created successfully",
     });
   } catch (error) {
     next(error);
   }
 };
 
-export const signIn: RequestHandler<
-  unknown,
-  unknown,
-  SignInType,
-  unknown
-> = async (req, res, next) => {
-  const { email, password } = req.body;
+export const signIn: RequestHandler = async (req, res, next) => {
   try {
-    if (!email || !password) {
-      throw createHttpError(400, "Please provide all fields");
-    }
-
-    if (password.length < 6) {
-      throw createHttpError(400, "Password must be at least 6 characters");
-    }
-
-    const user = await prismaClient.user.findUnique({
-      where: {
-        email,
-      },
-      select: {
-        id: true,
-        email: true,
-        password: true,
-        username: true,
-      },
-    });
-
-    if (!user) {
-      throw createHttpError(404, "Unable to process your request");
-    }
-
-    const checkPassword = await bcrypt.compare(password, user.password);
-
-    if (!checkPassword) {
-      throw createHttpError(401, "Unauthorized");
-    }
-
-    const { accessToken, success } = await createAuthSession({
-      userId: user.id,
-      res,
-    });
-
-    if (!success) {
-      throw createHttpError(500, "Unable to process ");
-    }
-
-    res.status(200).json({
-      success: true,
-      user: {
-        ...user,
-        password: undefined,
-      },
-      accessToken,
-    });
   } catch (error) {
-    console.log(error);
     next(error);
   }
 };
 
-export const logOut: RequestHandler = (req, res, next) => {
+export const logOut: RequestHandler = async (req, res, next) => {
   try {
-  } catch (error) {
-    console.log(error);
-    next(error);
-  }
-};
-
-export const refreshAccessToken: RequestHandler = (req, res, next) => {
-  try {
-    res.status(200).json({
-      success: true,
-      // accessToken,
-    });
   } catch (error) {
     next(error);
   }

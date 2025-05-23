@@ -1,16 +1,16 @@
-import { WebSocketServer } from "ws";
-import { server } from "./index";
+// import { WebSocketServer } from "ws";
+// import { server } from "./index";
 
-const wss = new WebSocketServer({ server });
+// const wss = new WebSocketServer({ server });
 
-wss.on("connection", (socket) => {
-  console.log(socket);
+// wss.on("connection", (socket) => {
+//   console.log(socket);
 
-  socket.on("message", (data) => {
-    console.log(data);
-  });
+//   socket.on("message", (data) => {
+//     console.log(data);
+//   });
 
-  socket.on("close", () => {
-    console.log("user disconnected");
-  });
-});
+//   socket.on("close", () => {
+//     console.log("user disconnected");
+//   });
+// });
