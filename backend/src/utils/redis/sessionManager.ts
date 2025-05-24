@@ -128,3 +128,73 @@ export const verifyAuthSession = async (
     next(error);
   }
 };
+
+export const refreshAuthSession = async (req: Request) => {
+  try {
+    const cookie = req.cookies.blazeToken;
+    if (!cookie) {
+      return {
+        success: false,
+        error: "Cookie not provided",
+      } as SessionFailure;
+    }
+
+    // this is a refresh token
+    const decode = jwt.verify(cookie, env.JWT_REFRESH_KEY) as TokenPayload;
+
+    // checking for redis entry
+
+    const sessionData = await redisClient.HGET(
+      `user:${decode.userId}:${decode.sessionId}`,
+      "refreshToken"
+    );
+
+    if (sessionData !== cookie) {
+      return {
+        success: false,
+        error: "Invalid token",
+      } as SessionFailure;
+    }
+    // creating a new payload as the old payload already have an exp
+
+    const newPayload: TokenPayload = {
+      sessionId: decode.sessionId,
+      userId: decode.userId,
+    };
+
+    const newRefreshToken = jwt.sign(newPayload, env.JWT_REFRESH_KEY, {
+      expiresIn: "15d",
+    });
+
+    const newAccessToken = jwt.sign(newPayload, env.JWT_ACCESS_KEY, {
+      expiresIn: "15m",
+    });
+
+    // now create a new redis entry
+
+    const newSession = await redisClient.HSET(
+      `user:${decode.userId}:${decode.sessionId}`,
+      "refreshToken",
+      newRefreshToken
+    );
+
+    const cookieConfig: CookieOptions = {
+      path: "/",
+      secure: env.NODE_ENV !== "development",
+      httpOnly: true,
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    };
+
+    // returning
+    return {
+      success: true,
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      cookieConfig,
+    } as SessionSuccess;
+  } catch (error) {
+    console.log("An error occurred while refreshing the token", error);
+    return { success: false, error } as SessionFailure;
+  }
+};
