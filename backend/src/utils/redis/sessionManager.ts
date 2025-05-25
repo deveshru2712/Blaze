@@ -75,8 +75,9 @@ export const verifyAuthSession = async (
 
     if (!token || !token.startsWith("Bearer ")) {
       res.status(401).json({
-        message: "Invalid token",
-        action: "refresh",
+        success: false,
+        message: "no token",
+        action: "reauthenticate",
       });
       return;
     }
@@ -92,6 +93,7 @@ export const verifyAuthSession = async (
 
     if (!session) {
       res.status(401).json({
+        success: false,
         message: "session expired",
         action: "reauthenticate",
       });
@@ -110,6 +112,7 @@ export const verifyAuthSession = async (
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
       res.status(401).json({
+        success: false,
         message: "Token expired",
         action: "refresh",
       });
@@ -118,6 +121,7 @@ export const verifyAuthSession = async (
 
     if (error instanceof jwt.JsonWebTokenError) {
       res.status(401).json({
+        success: false,
         message: "Invalid token",
         action: "reauthenticate",
       });

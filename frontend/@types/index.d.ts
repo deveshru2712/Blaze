@@ -35,4 +35,6 @@ interface AuthStoreActions {
   logIn: (credentials: SignInType) => Promise<void>;
   logOut: () => void;
   authCheck: () => void;
+  refreshToken: () => void;
+  handleAuthError: () => void;
 }

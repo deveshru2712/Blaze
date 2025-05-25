@@ -144,7 +144,18 @@ export const signIn: RequestHandler = async (
 
 export const logOut: RequestHandler = async (req, res, next) => {
   try {
+    res.cookie("blazeToken", "", {
+      expires: new Date(0),
+      httpOnly: true,
+      sameSite: "strict",
+    });
+
+    res.status(200).json({
+      message: "Logout successfully",
+    });
+    return;
   } catch (error) {
+    console.log("An error occurred while log out:", error);
     next(error);
   }
 };

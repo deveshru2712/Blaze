@@ -8,7 +8,7 @@ import { z } from "zod";
 import { Form } from "./ui/form";
 import { Button } from "./ui/button";
 import Formfield from "./Formfield";
-import { useAuthStore } from "@/store/auth.Store";
+import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 
 const authFormSchema = (type: FormType) => {

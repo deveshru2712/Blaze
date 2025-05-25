@@ -1,6 +1,6 @@
 "use client";
 import Navbar from "@/components/Navbar";
-import { useAuthStore } from "@/store/auth.Store";
+import { useAuthStore } from "@/store/authStore";
 import { redirect } from "next/navigation";
 import React from "react";
 
