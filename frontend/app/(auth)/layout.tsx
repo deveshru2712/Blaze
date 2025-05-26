@@ -1,5 +1,4 @@
 "use client";
-import Loader from "@/components/Loader";
 import Navbar from "@/components/Navbar";
 import { useAuthStore } from "@/store/authStore";
 import { redirect } from "next/navigation";
@@ -10,13 +9,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   if (User && !isLoading) {
     redirect("/message");
   }
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex justify-center items-center">
-        <Loader />
-      </div>
-    );
-  }
+
   return (
     <div>
       <Navbar />

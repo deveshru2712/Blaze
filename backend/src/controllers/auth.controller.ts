@@ -82,7 +82,7 @@ export const signIn: RequestHandler = async (
       return;
     }
 
-    if (password.length > 6) {
+    if (password.length < 6) {
       res.status(400).json({
         message: "Password must of 6 character",
       });

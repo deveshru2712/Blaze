@@ -16,11 +16,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         isLoading: false,
       });
       console.log(res.data.user);
-      toast("Account created successfully 🔥");
-    } catch (error) {
+      toast.success("Account created successfully 🔥");
+    } catch (error: any) {
       console.log(error);
       set({ isLoading: false, User: null });
-      toast("Unable to create an account 🥲");
+      toast.error(error.response.data.message);
     }
   },
   logIn: async (credentials: SignInType) => {
@@ -34,11 +34,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         User: res.data.user,
       });
 
-      toast("Successfully logged In 🔥");
-    } catch (error) {
+      toast.success("Successfully logged In 🔥");
+    } catch (error: any) {
       console.log(error);
       set({ User: null, isLoading: false });
-      toast("Unable login 🥲");
+      toast.error(error.response.data.message);
     }
   },
 
@@ -62,11 +62,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       await api.post(`/auth/logout`);
       set({ User: null, isLoading: false });
+      toast.success("Successfully logged out 👋");
       return null;
-    } catch (error) {
+    } catch (error: any) {
       console.log("An error occurred while logging out:", error);
       set({ isLoading: false });
-      toast.success("Successfully logged out 👋");
+      toast.error(error.response.data.message);
       return null;
     }
   },
