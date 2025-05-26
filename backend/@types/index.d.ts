@@ -31,7 +31,6 @@ interface UserSession {
 interface SessionSuccess {
   success: true;
   refreshToken: string;
-  accessToken: string;
   cookieConfig: CookieOptions;
 }
 

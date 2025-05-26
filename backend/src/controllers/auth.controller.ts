@@ -2,10 +2,7 @@ import bcrypt from "bcryptjs";
 import { NextFunction, Request, RequestHandler, Response } from "express";
 import prismaClient from "../utils/prismaClient";
 import { SignInType, SignUpType } from "../utils/schema/authInputTypes";
-import {
-  createAuthSession,
-  refreshAuthSession,
-} from "../utils/redis/sessionManager";
+import { createAuthSession } from "../utils/redis/sessionManager";
 
 export const signUp = async (
   req: Request<unknown, unknown, SignUpType, unknown>,
@@ -64,7 +61,6 @@ export const signUp = async (
     res.status(200).json({
       success: true,
       user: { ...newUser, password: undefined },
-      accessToken: session.accessToken,
       message: "Account created successfully",
     });
   } catch (error) {
@@ -134,7 +130,6 @@ export const signIn: RequestHandler = async (
     res.status(200).json({
       success: true,
       user: { ...user, password: undefined },
-      accessToken: session.accessToken,
       message: "Logged in successfully",
     });
   } catch (error) {
@@ -156,31 +151,6 @@ export const logOut: RequestHandler = async (req, res, next) => {
     return;
   } catch (error) {
     console.log("An error occurred while log out:", error);
-    next(error);
-  }
-};
-
-export const refreshSession: RequestHandler = async (req, res, next) => {
-  try {
-    const session = await refreshAuthSession(req);
-
-    if (!session.success) {
-      console.error("Session creation failed:", session.error);
-      res.status(500).json({
-        message: "Failed to refresh session",
-        action: "reauthenticate",
-      });
-      return;
-    }
-
-    res.cookie("blazeToken", session.refreshToken, session.cookieConfig);
-
-    res.status(200).json({
-      success: true,
-      accessToken: session.accessToken,
-      message: "Session refresh",
-    });
-  } catch (error) {
     next(error);
   }
 };

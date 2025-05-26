@@ -27,7 +27,6 @@ interface SignInType {
 interface AuthStoreState {
   User: User | null;
   isLoading: boolean;
-  accessToken: string | null;
 }
 
 interface AuthStoreActions {
@@ -35,6 +34,4 @@ interface AuthStoreActions {
   logIn: (credentials: SignInType) => Promise<void>;
   logOut: () => void;
   authCheck: () => void;
-  refreshToken: () => void;
-  handleAuthError: () => void;
 }

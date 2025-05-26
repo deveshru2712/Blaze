@@ -10,6 +10,5 @@ router.post("/sign-in", InputValidator(signInInput), authController.signIn);
 router.post("/logout", authController.logOut);
 
 router.post("/verify", verifyAuthSession, authController.verifySession);
-router.post("/refresh", authController.refreshSession);
 
 export default router;

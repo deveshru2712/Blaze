@@ -7,22 +7,19 @@ type AuthStore = AuthStoreState & AuthStoreActions;
 export const useAuthStore = create<AuthStore>((set, get) => ({
   User: null,
   isLoading: true,
-  accessToken: null,
   signUp: async (credentials: SignUpType) => {
     set({ isLoading: true });
     try {
-      console.log(credentials);
-      const res = await api.post(`/auth/sign-up`);
-      console.log(res.data.user);
+      const res = await api.post(`/auth/sign-up`, credentials);
       set({
         User: res.data.user,
         isLoading: false,
-        accessToken: res.data.accessToken,
       });
+      console.log(res.data.user);
       toast("Account created successfully 🔥");
     } catch (error) {
       console.log(error);
-      set({ isLoading: false, User: null, accessToken: null });
+      set({ isLoading: false, User: null });
       toast("Unable to create an account 🥲");
     }
   },
@@ -35,54 +32,26 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       set({
         isLoading: false,
         User: res.data.user,
-        accessToken: res.data.accessToken,
       });
 
       toast("Successfully logged In 🔥");
     } catch (error) {
       console.log(error);
-      set({ User: null, accessToken: null, isLoading: false });
+      set({ User: null, isLoading: false });
       toast("Unable login 🥲");
     }
   },
-  refreshToken: async () => {
-    set({ isLoading: true });
-    try {
-      const res = await api.post("/auth/refresh");
-      set({
-        accessToken: res.data.accessToken,
-        User: get().User,
-        isLoading: false,
-      });
-      return null;
-    } catch (error) {
-      console.log(error);
-      get().logOut();
-      set({ User: null, accessToken: null, isLoading: false });
-      return null;
-    }
-  },
-  handleAuthError: async () => {},
+
   authCheck: async () => {
     set({ isLoading: true });
-    const { refreshToken, logOut } = get();
+    const { logOut } = get();
     try {
       const res = await api.post("/auth/verify");
-
-      if (!res.data.success && res.data.action == "refresh") {
-        // call refresh token
-        refreshToken();
-        return null;
-      } else if (!res.data.success && res.data.action == "reauthenticate") {
-        // logout the user
-        logOut();
-        toast.error("Please login again🙏");
-        return null;
-      }
       set({ User: res.data.user, isLoading: false });
-
       return null;
     } catch (error) {
+      // logout the user if there is an error
+      logOut();
       console.log(error);
       set({ User: null, isLoading: false });
       return null;
@@ -92,7 +61,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true });
     try {
       await api.post(`/auth/logout`);
-      set({ User: null, accessToken: null, isLoading: false });
+      set({ User: null, isLoading: false });
       return null;
     } catch (error) {
       console.log("An error occurred while logging out:", error);
