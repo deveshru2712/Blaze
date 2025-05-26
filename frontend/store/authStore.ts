@@ -37,6 +37,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         User: res.data.user,
         accessToken: res.data.accessToken,
       });
+
       toast("Successfully logged In 🔥");
     } catch (error) {
       console.log(error);
@@ -45,36 +46,46 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
   refreshToken: async () => {
-    // set({ isLoading: true });
-    // try {
-    //   const res = await api.post("/auth/refresh");
-    //   const newAccessToken = res.data.accessToken;
-    //   set({ accessToken: newAccessToken, isLoading: false });
-    // } catch (error) {
-    //   console.log(error);
-    //   // logout the user as the token has expired
-    //   get().logOut();
-    //   set({ User: null, isLoading: false });
-    // }
+    set({ isLoading: true });
+    try {
+      const res = await api.post("/auth/refresh");
+      set({
+        accessToken: res.data.accessToken,
+        User: get().User,
+        isLoading: false,
+      });
+      return null;
+    } catch (error) {
+      console.log(error);
+      get().logOut();
+      set({ User: null, accessToken: null, isLoading: false });
+      return null;
+    }
   },
   handleAuthError: async () => {},
   authCheck: async () => {
     set({ isLoading: true });
     const { refreshToken, logOut } = get();
     try {
-      const res = await api("/auth/verify");
+      const res = await api.post("/auth/verify");
 
       if (!res.data.success && res.data.action == "refresh") {
         // call refresh token
         refreshToken();
+        return null;
       } else if (!res.data.success && res.data.action == "reauthenticate") {
         // logout the user
         logOut();
+        toast.error("Please login again🙏");
+        return null;
       }
       set({ User: res.data.user, isLoading: false });
+
+      return null;
     } catch (error) {
-      set({ User: null, isLoading: false });
       console.log(error);
+      set({ User: null, isLoading: false });
+      return null;
     }
   },
   logOut: async () => {
@@ -82,9 +93,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       await api.post(`/auth/logout`);
       set({ User: null, accessToken: null, isLoading: false });
+      return null;
     } catch (error) {
       console.log("An error occurred while logging out:", error);
       set({ isLoading: false });
+      toast.success("Successfully logged out 👋");
+      return null;
     }
   },
 }));
