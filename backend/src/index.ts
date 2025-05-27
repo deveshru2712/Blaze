@@ -1,16 +1,12 @@
-import "dotenv/config";
 import express, { NextFunction, Request, Response } from "express";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
-import createHttpError, { isHttpError } from "http-errors";
 import cors from "cors";
 
-import env from "./utils/validateEnv";
 import authRouter from "./routes/auth.routes";
-import { redisClient } from "./utils/redis/redisClient";
 import { ZodError } from "zod";
 
-const app = express();
+export const app = express();
 app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 app.use(express.json());
 app.use(morgan("dev"));
@@ -23,8 +19,8 @@ app.get("/", (req, res) => {
 });
 
 // Handle 404 - Page not found
-app.use((req, res, next) => {
-  next(createHttpError(404, "Page not found"));
+app.use((req, res) => {
+  res.status(404).json({ message: "Page not found" });
 });
 
 // Error handling middleware
@@ -66,13 +62,13 @@ app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-export const server = app.listen(env.PORT, async () => {
-  try {
-    await redisClient.connect();
-    console.log("Redis connected successfully");
-    console.log("Server is running on the port:", env.PORT);
-  } catch (error) {
-    console.error("Failed to connect to Redis:", error);
-    process.exit(1);
-  }
-});
+// export const server = app.listen(env.PORT, async () => {
+//   try {
+//     await redisClient.connect();
+//     console.log("Redis connected successfully");
+//     console.log("Server is running on the port:", env.PORT);
+//   } catch (error) {
+//     console.error("Failed to connect to Redis:", error);
+//     process.exit(1);
+//   }
+// });

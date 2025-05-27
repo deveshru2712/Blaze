@@ -1,13 +1,26 @@
 "use client";
+import Loader from "@/components/Loader";
 import Navbar from "@/components/Navbar";
 import { useAuthStore } from "@/store/authStore";
-import { redirect } from "next/navigation";
-import React from "react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
+  const router = useRouter();
   const { User, isLoading } = useAuthStore();
-  if (User && !isLoading) {
-    redirect("/message");
+
+  useEffect(() => {
+    if (!isLoading && User) {
+      router.push("/message");
+    }
+  }, [User, isLoading, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <Loader />
+      </div>
+    );
   }
 
   return (

@@ -1,16 +1,43 @@
-// import { WebSocketServer } from "ws";
-// import { server } from "./index";
+import "dotenv/config";
+import { createServer } from "http";
+import env from "./utils/validateEnv";
+import { app } from "./index";
+import { redisClient } from "./utils/redis/redisClient";
+import { Server } from "socket.io";
 
-// const wss = new WebSocketServer({ server });
+const httpServer = createServer(app);
 
-// wss.on("connection", (socket) => {
-//   console.log(socket);
+const io = new Server(httpServer);
 
-//   socket.on("message", (data) => {
-//     console.log(data);
-//   });
+io.on("connection", (socket) => {
+  console.log("New client connected:", socket.id);
 
-//   socket.on("close", () => {
-//     console.log("user disconnected");
-//   });
-// });
+  socket.on("message", (msg) => {
+    try {
+      console.log(msg);
+      io.emit("message", msg);
+    } catch (error) {
+      console.log("Error occurred while sending message", error);
+    }
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected", socket.id);
+    socket.disconnect();
+  });
+
+  socket.on("error", (error) => {
+    console.log("Error occurred", error);
+  });
+});
+
+export default httpServer.listen(env.PORT, async () => {
+  try {
+    await redisClient.connect();
+    console.log("Redis connected successfully");
+    console.log("Server is running on the port:", env.PORT);
+  } catch (error) {
+    console.error("Failed to connect to Redis:", error);
+    process.exit(1);
+  }
+});

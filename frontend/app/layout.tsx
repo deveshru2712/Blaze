@@ -23,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning={true}>
       <body
-        className={`${bricolageGrotesque.variable} overflow-x-hidden text-white bg-black/95 antialiased`}
+        className={`${bricolageGrotesque.variable} overflow-x-hidden text-white bg-black antialiased`}
       >
         {children}
         <Toaster />
